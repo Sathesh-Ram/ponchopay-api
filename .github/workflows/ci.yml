@@ -1,0 +1,46 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: ponchopay_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U testuser" 
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Set up environment variables
+      run: |
+        echo "DATABASE_URL=postgres://testuser:testpass@localhost:5432/ponchopay_test_db" >> $GITHUB_ENV
+
+    - name: Run tests
+      run: npm test
+
+    # - name: Build Docker image
+    #   run: docker build . -t ponchopay-api
